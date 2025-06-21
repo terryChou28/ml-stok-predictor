@@ -2,8 +2,8 @@
 
 An interactive dashboard for predicting S&P 500 trends using Random Forest models and historical indicators. Built with **React**, **Chart.js**, and **Flask**, this app allows users to dynamically explore forecasts and run customizable backtests.
 
-![Dashboard Screenshot](screenshots/dashboard.png)
-![Chart View](screenshots/chart.png)
+![Dashboard Screenshot](./frontend/src/assets/dashboard.png)
+![Chart View](./frontend/src/assets/chart.png)
 
 ---
 
