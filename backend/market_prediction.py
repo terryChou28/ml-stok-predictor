@@ -1,7 +1,7 @@
-# import yfinance as yf
-# from sklearn.ensemble import RandomForestClassifier
-# from sklearn.metrics import precision_score
-# import pandas as pd
+import yfinance as yf
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import precision_score
+import pandas as pd
 
 # def run_prediction(threshold=0.6, window=60):
 #     sp500 = yf.Ticker("^GSPC")
@@ -84,17 +84,17 @@
 
 
 
-import yfinance as yf
-import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import precision_score
 
 def run_prediction(threshold=0.6, window=60):
     sp500 = yf.Ticker("^GSPC").history(period="max")
 
-    sp500 = sp500.drop(columns=["Dividends", "Stock Splits"])
+    del sp500["Dividends"]
+    del sp500["Stock Splits"]
+
     sp500["Tomorrow"] = sp500["Close"].shift(-1)
+
     sp500["Target"] = (sp500["Tomorrow"] > sp500["Close"]).astype(int)
+
     sp500 = sp500.loc["1990-01-01":].copy()
 
     # Add features for selected horizon
@@ -108,23 +108,29 @@ def run_prediction(threshold=0.6, window=60):
 
     model = RandomForestClassifier(n_estimators=200, min_samples_split=50, random_state=1)
 
+
     def predict(train, test, predictors, model, threshold):
         model.fit(train[predictors], train["Target"])
-        probs = model.predict_proba(test[predictors])[:, 1]
-        preds = (probs >= threshold).astype(int)
+        preds = model.predict_proba(test[predictors])[:, 1]
+        preds[preds >= threshold] = 1
+        preds[preds < threshold] = 0
         preds = pd.Series(preds, index=test.index, name="Predictions")
         combined = test.copy()
         combined["Predictions"] = preds
         return combined
 
+
     def backtest(data, model, predictors, threshold=0.6, start=2500, step=250):
         all_predictions = []
+
         for i in range(start, data.shape[0], step):
             train = data.iloc[0:i]
             test = data.iloc[i:i+step]
             predictions = predict(train, test, predictors, model, threshold)
             all_predictions.append(predictions)
+            
         return pd.concat(all_predictions)
+
 
     predictions = backtest(sp500, model, predictors, threshold=threshold)
     full_precision = precision_score(predictions["Target"], predictions["Predictions"], zero_division=0)
